@@ -1,0 +1,48 @@
+<script src="../../dist/vue.global.js"></script>
+
+<div id="demo">
+  <p>{{ state.count }}</p>
+  <button @click="add">递增</button>
+  <child />
+</div>
+
+<script>
+const { createApp, reactive, ref } = Vue
+createApp({
+  components: {
+    child: {
+      template: `<div>{{ name }}</div><button @click="modify">修改</button>`,
+      setup() {
+        const name = ref('child')
+        const modify = () => name.value = 'change name'
+        return { name, modify }
+      }
+    }
+  },
+  setup() {
+    const state = reactive({ count: 1 })
+    const add = () => { state.count++ }
+    return {
+      state,
+      add
+    }
+  }
+}).mount('#demo')
+</script>
+
+<style>
+  #demo {
+    font-family: 'Helvetica', Arial, sans-serif;
+  }
+  a {
+    text-decoration: none;
+    color: #f66;
+  }
+  li {
+    line-height: 1.5em;
+    margin-bottom: 20px;
+  }
+  .author, .date {
+    font-weight: bold;
+  }
+</style>
