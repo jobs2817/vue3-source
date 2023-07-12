@@ -486,11 +486,12 @@ export function createComponentInstance(
   parent: ComponentInternalInstance | null,
   suspense: SuspenseBoundary | null
 ) {
+  // options 配置
   const type = vnode.type as ConcreteComponent
   // inherit parent app context - or - if root, adopt from root vnode
   const appContext =
     (parent ? parent.appContext : vnode.appContext) || emptyAppContext
-
+  // 初始化 组件 实例 对象
   const instance: ComponentInternalInstance = {
     uid: uid++,
     vnode,
@@ -572,8 +573,10 @@ export function createComponentInstance(
   if (__DEV__) {
     instance.ctx = createDevRenderContext(instance)
   } else {
+    // 将自身放置到 自身 ctx 上
     instance.ctx = { _: instance }
   }
+  // 将根实例放置到 组件实例上
   instance.root = parent ? parent.root : instance
   instance.emit = emit.bind(null, instance)
 
@@ -662,6 +665,7 @@ export function setupComponent(
   isInSSRComponentSetup = isSSR
 
   const { props, children } = instance.vnode
+  // 判断是否是一个组件
   const isStateful = isStatefulComponent(instance)
   // 初始化 props
   initProps(instance, props, isStateful, isSSR)
@@ -679,6 +683,7 @@ function setupStatefulComponent(
   instance: ComponentInternalInstance,
   isSSR: boolean
 ) {
+  // options 配置
   const Component = instance.type as ComponentOptions
   // dev 环境校验代码先不管
   if (__DEV__) {
@@ -779,6 +784,7 @@ export function handleSetupResult(
   setupResult: unknown,
   isSSR: boolean
 ) {
+  // 是 function 说明是渲染函数, vue 这么规定的
   if (isFunction(setupResult)) {
     // setup returned an inline render function
     if (__SSR__ && (instance.type as ComponentOptions).__ssrInlineRender) {
@@ -800,6 +806,7 @@ export function handleSetupResult(
     if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
       instance.devtoolsRawSetupState = setupResult
     }
+    // 做proxy 代理, render 执行时会触发 setup 暴露出去属性的 get 
     instance.setupState = proxyRefs(setupResult)
     if (__DEV__) {
       exposeSetupStateOnRenderContext(instance)
@@ -837,7 +844,7 @@ export function registerRuntimeCompiler(_compile: any) {
 
 // dev only
 export const isRuntimeOnly = () => !compile
-
+// 
 export function finishComponentSetup(
   instance: ComponentInternalInstance,
   isSSR: boolean,

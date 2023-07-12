@@ -331,7 +331,7 @@ export function createAppAPI<HostElement extends RendererElement>(
                 ` you need to unmount the previous app by calling \`app.unmount()\` first.`
             )
           }
-          // 将 根节点转化为 vnode
+          // 将 组件根节点转化为 vnode
           const vnode = createVNode(rootComponent, rootProps)
           // store app context on the root VNode.
           // this will be set on the root instance on initial mount.
@@ -343,11 +343,12 @@ export function createAppAPI<HostElement extends RendererElement>(
               render(cloneVNode(vnode), rootContainer, isSVG)
             }
           }
-          // 多平台先不管
+          // 没怎么理解, 貌似是自定义渲染器逻辑
           if (isHydrate && hydrate) {
             hydrate(vnode as VNode<Node, Element>, rootContainer as any)
           } else {
             // 调用 render
+            // 定义在 packages/runtime-core/src/renderer.ts 里面, 
             render(vnode, rootContainer, isSVG)
           }
           // 挂载完成

@@ -73,7 +73,7 @@ export const createApp = ((...args) => {
   }
 
   const { mount } = app
-  // 对 mount 进行重写, web端区分是 webpack loader 解析 template 还是直接浏览器解析 template, 
+  // 一下对 mount 进行重写, web端区分是  vue-loader 解析 template 还是直接浏览器解析 template, 如果是 浏览器解析, 就是运行下面代码, 对 template 做归一化处理
   // 但是挂载都是共用一个 mount, 显然这里是浏览器端处理
   app.mount = (containerOrSelector: Element | ShadowRoot | string): any => {
     // 获取挂载的 dom 节点

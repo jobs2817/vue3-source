@@ -1209,8 +1209,7 @@ function baseCreateRenderer(
   ) => {
     // 2.x compat may pre-create the component instance before actually
     // mounting
-    const compatMountInstance =
-      __COMPAT__ && initialVNode.isCompatRoot && initialVNode.component
+    const compatMountInstance =  __COMPAT__ && initialVNode.isCompatRoot && initialVNode.component
     // createComponentInstance 创建组件 instance
     const instance: ComponentInternalInstance =
       compatMountInstance ||
@@ -1259,7 +1258,7 @@ function baseCreateRenderer(
       }
       return
     }
-
+    // 类似 vue 渲染 watcher, 这里是一个 渲染副作用函数, 是视图和数据连接的桥梁,负责视图dom 新增/更新
     setupRenderEffect(
       instance,
       initialVNode,
@@ -1275,15 +1274,11 @@ function baseCreateRenderer(
       endMeasure(instance, `mount`)
     }
   }
-
+  // 更新组件
   const updateComponent = (n1: VNode, n2: VNode, optimized: boolean) => {
     const instance = (n2.component = n1.component)!
     if (shouldUpdateComponent(n1, n2, optimized)) {
-      if (
-        __FEATURE_SUSPENSE__ &&
-        instance.asyncDep &&
-        !instance.asyncResolved
-      ) {
+      if (__FEATURE_SUSPENSE__ &&instance.asyncDep && !instance.asyncResolved) {
         // async & still pending - just update props and slots
         // since the component's reactive effect for render isn't set-up yet
         if (__DEV__) {
@@ -1319,8 +1314,9 @@ function baseCreateRenderer(
     isSVG,
     optimized
   ) => {
-    // 同 vue2 mountComponent
+    // 同 vue2 mountComponent, 不管创建视图还是更新视图,都会调用这个方法
     const componentUpdateFn = () => {
+      // 没有挂载
       if (!instance.isMounted) {
         let vnodeHook: VNodeHook | null | undefined
         const { el, props } = initialVNode
@@ -1347,6 +1343,7 @@ function baseCreateRenderer(
         }
         toggleRecurse(instance, true)
 
+        // 先不管, 自定义渲染函数生成的 vnode, 直接看 else 既可
         if (el && hydrateNode) {
           // vnode has adopted host node - perform hydration instead of mount.
           const hydrateSubTree = () => {
@@ -1388,6 +1385,7 @@ function baseCreateRenderer(
             startMeasure(instance, `render`)
           }
           debugger
+          // 执行 render 生成 vnode, 其他逻辑暂时没看,不影响流程理解
           const subTree = (instance.subTree = renderComponentRoot(instance))
           if (__DEV__) {
             endMeasure(instance, `render`)
@@ -1395,6 +1393,7 @@ function baseCreateRenderer(
           if (__DEV__) {
             startMeasure(instance, `patch`)
           }
+          // 开始真实 dom 创建
           patch(
             null,
             subTree,
@@ -1414,20 +1413,15 @@ function baseCreateRenderer(
           queuePostRenderEffect(m, parentSuspense)
         }
         // onVnodeMounted
-        if (
-          !isAsyncWrapperVNode &&
-          (vnodeHook = props && props.onVnodeMounted)
-        ) {
+        if (!isAsyncWrapperVNode && (vnodeHook = props && props.onVnodeMounted)) {
           const scopedInitialVNode = initialVNode
           queuePostRenderEffect(
             () => invokeVNodeHook(vnodeHook!, parent, scopedInitialVNode),
             parentSuspense
           )
         }
-        if (
-          __COMPAT__ &&
-          isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)
-        ) {
+
+        if ( __COMPAT__ && isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)) {
           queuePostRenderEffect(
             () => instance.emit('hook:mounted'),
             parentSuspense
@@ -1437,12 +1431,7 @@ function baseCreateRenderer(
         // activated hook for keep-alive roots.
         // #1742 activated hook must be accessed after first render
         // since the hook may be injected by a child keep-alive
-        if (
-          initialVNode.shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE ||
-          (parent &&
-            isAsyncWrapper(parent.vnode) &&
-            parent.vnode.shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE)
-        ) {
+        if (initialVNode.shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE ||(parent && isAsyncWrapper(parent.vnode) && parent.vnode.shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE)) {
           instance.a && queuePostRenderEffect(instance.a, parentSuspense)
           if (
             __COMPAT__ &&
@@ -1454,6 +1443,7 @@ function baseCreateRenderer(
             )
           }
         }
+        // 渲染完成标识
         instance.isMounted = true
 
         if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
@@ -1490,10 +1480,7 @@ function baseCreateRenderer(
         if ((vnodeHook = next.props && next.props.onVnodeBeforeUpdate)) {
           invokeVNodeHook(vnodeHook, parent, next, vnode)
         }
-        if (
-          __COMPAT__ &&
-          isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)
-        ) {
+        if (__COMPAT__ && isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)) {
           instance.emit('hook:beforeUpdate')
         }
         toggleRecurse(instance, true)
@@ -1502,16 +1489,19 @@ function baseCreateRenderer(
         if (__DEV__) {
           startMeasure(instance, `render`)
         }
+        // 执行 render, 重新依赖收集,返回新 vnode
         const nextTree = renderComponentRoot(instance)
         if (__DEV__) {
           endMeasure(instance, `render`)
         }
+        // 上次更新 dom 时生成的 vnode
         const prevTree = instance.subTree
         instance.subTree = nextTree
 
         if (__DEV__) {
           startMeasure(instance, `patch`)
         }
+        // 补丁, 快速 diff
         patch(
           prevTree,
           nextTree,
@@ -1544,10 +1534,7 @@ function baseCreateRenderer(
             parentSuspense
           )
         }
-        if (
-          __COMPAT__ &&
-          isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)
-        ) {
+        if (__COMPAT__ && isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)) {
           queuePostRenderEffect(
             () => instance.emit('hook:updated'),
             parentSuspense
@@ -1570,7 +1557,7 @@ function baseCreateRenderer(
       () => queueJob(update),
       instance.scope // track it in component's effect scope
     ))
-
+    // 本质就是执行  componentUpdateFn 函数
     const update: SchedulerJob = (instance.update = () => effect.run())
     update.id = instance.uid
     // allowRecurse
@@ -2341,13 +2328,15 @@ function baseCreateRenderer(
   const render: RootRenderFunction = (vnode, container, isSVG) => {
     // vnode 不存在, 卸载oldVnode 对应的 dom
     if (vnode == null) {
+      // _vnode 指的是上一次运行 render 时生成的 vnode
       if (container._vnode) {
         unmount(container._vnode, null, null, true)
       }
     } else {
-      // 补丁  ->  真是 dom 创建  || 更新
+      // 开启 dom 更新, _vnode 为 null, 说明是创建, 都存在值, 则更新
       patch(container._vnode || null, vnode, container, null, null, null, isSVG)
     }
+    // 执行各种异步回调, 貌似和渲染关系不大,先不关注
     flushPreFlushCbs()
     flushPostFlushCbs()
     container._vnode = vnode

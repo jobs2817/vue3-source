@@ -17,7 +17,9 @@ function compileToFunction(
   template: string | HTMLElement,
   options?: CompilerOptions
 ): RenderFunction {
+  // 不是字符串
   if (!isString(template)) {
+    // 是一个 dom 节点
     if (template.nodeType) {
       template = template.innerHTML
     } else {
@@ -27,11 +29,12 @@ function compileToFunction(
   }
 
   const key = template
+  // 获取缓存编译后的 render
   const cached = compileCache[key]
   if (cached) {
     return cached
   }
-
+  // 兼容 { template: '#app' } 这种写法
   if (template[0] === '#') {
     const el = document.querySelector(template)
     if (__DEV__ && !el) {
@@ -56,7 +59,7 @@ function compileToFunction(
   if (!opts.isCustomElement && typeof customElements !== 'undefined') {
     opts.isCustomElement = tag => !!customElements.get(tag)
   }
-
+  // 解析模版, 这块涉及 词法分析 & 语法分析 ...
   const { code } = compile(template, opts)
 
   function onError(err: CompilerError, asWarning = false) {
@@ -77,13 +80,15 @@ function compileToFunction(
   // with keys that cannot be mangled, and can be quite heavy size-wise.
   // In the global build we know `Vue` is available globally so we can avoid
   // the wildcard object.
+  // 将模版编辑后的字符串 (类ast) 包装成  render 函数
   const render = (
     __GLOBAL__ ? new Function(code)() : new Function('Vue', code)(runtimeDom)
   ) as RenderFunction
 
-  // mark the function as runtime compiled
+    // mark the function as runtime compiled
+    // 标记这是 complite 编辑的 render
   ;(render as InternalRenderFunction)._rc = true
-
+  // 返回 模板 解析编译后的  render 函数
   return (compileCache[key] = render)
 }
 

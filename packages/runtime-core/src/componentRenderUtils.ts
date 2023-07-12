@@ -63,6 +63,7 @@ export function renderComponentRoot(
 
   let result
   let fallthroughAttrs
+  // 将当前正在渲染的组件实例暴露全局
   const prev = setCurrentRenderingInstance(instance)
   if (__DEV__) {
     accessedAttrs = false
@@ -73,6 +74,7 @@ export function renderComponentRoot(
       // withProxy is a proxy with a different `has` trap only for
       // runtime-compiled render functions using `with` block.
       const proxyToUse = withProxy || proxy
+      // 执行 render 函数, 此处开始依赖收集, 返回 vnode
       result = normalizeVNode(
         render!.call(
           proxyToUse,
@@ -87,6 +89,7 @@ export function renderComponentRoot(
       fallthroughAttrs = attrs
     } else {
       // functional
+      // 函数组件,没使用过逻辑先不过, 主要还是执行 render
       const render = Component as FunctionalComponent
       // in dev, mark attrs accessed if optional props (attrs === props)
       if (__DEV__ && attrs === props) {
@@ -237,7 +240,7 @@ export function renderComponentRoot(
   } else {
     result = root
   }
-
+  // 当前渲染全局实例重置
   setCurrentRenderingInstance(prev)
   return result
 }
