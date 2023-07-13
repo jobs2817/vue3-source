@@ -1719,6 +1719,7 @@ function baseCreateRenderer(
       const nextChild = (c2[i] = optimized
         ? cloneIfMounted(c2[i] as VNode)
         : normalizeVNode(c2[i]))
+      
       patch(
         c1[i],
         nextChild,
@@ -1731,6 +1732,7 @@ function baseCreateRenderer(
         optimized
       )
     }
+    // 旧 dom 长度 大于 新 dom 长度, 卸载
     if (oldLength > newLength) {
       // remove old
       unmountChildren(
@@ -1743,6 +1745,7 @@ function baseCreateRenderer(
       )
     } else {
       // mount new
+      // 否则就是挂载
       mountChildren(
         c2,
         container,
@@ -1758,6 +1761,8 @@ function baseCreateRenderer(
   }
 
   // can be all-keyed or mixed
+
+  // 存在 key 的 dom diff 更新
   const patchKeyedChildren = (
     c1: VNode[],
     c2: VNodeArrayChildren,
@@ -1777,11 +1782,14 @@ function baseCreateRenderer(
     // 1. sync from start
     // (a b) c
     // (a b) d e
+
+    // 找出前置节点
     while (i <= e1 && i <= e2) {
       const n1 = c1[i]
       const n2 = (c2[i] = optimized
         ? cloneIfMounted(c2[i] as VNode)
         : normalizeVNode(c2[i]))
+      // 不是真正意义上的完全复用, patch 会分析 vnode 属性不同打补丁
       if (isSameVNodeType(n1, n2)) {
         patch(
           n1,
@@ -1803,11 +1811,14 @@ function baseCreateRenderer(
     // 2. sync from end
     // a (b c)
     // d e (b c)
+
+    // 找出后置节点
     while (i <= e1 && i <= e2) {
       const n1 = c1[e1]
       const n2 = (c2[e2] = optimized
         ? cloneIfMounted(c2[e2] as VNode)
         : normalizeVNode(c2[e2]))
+      // 后置节点同前置节点一样处理
       if (isSameVNodeType(n1, n2)) {
         patch(
           n1,
@@ -1834,6 +1845,8 @@ function baseCreateRenderer(
     // (a b)
     // c (a b)
     // i = 0, e1 = -1, e2 = 0
+
+    // vnode 比 oldVnode 多
     if (i > e1) {
       if (i <= e2) {
         const nextPos = e2 + 1
@@ -1863,7 +1876,9 @@ function baseCreateRenderer(
     // i = 2, e1 = 2, e2 = 1
     // a (b c)
     // (b c)
-    // i = 0, e1 = 0, e2 = -1
+      // i = 0, e1 = 0, e2 = -1
+
+    // oldVnode 比 vnode 多, 进行 dom 卸载
     else if (i > e2) {
       while (i <= e1) {
         unmount(c1[i], parentComponent, parentSuspense, true)
