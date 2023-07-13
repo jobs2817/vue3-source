@@ -354,6 +354,7 @@ function baseCreateRenderer(
 
   // Note: functions inside this closure should use `const xxx = () => {}`
   // style in order to prevent being inlined by minifiers.
+  // 通过比较 新旧Vnode, 对 dom 更新
   const patch: PatchFn = (
     n1,
     n2,
@@ -377,7 +378,7 @@ function baseCreateRenderer(
       unmount(n1, parentComponent, parentSuspense, true)
       n1 = null
     }
-
+    // 当前节点及其子节点正在进行渲染时遇到了错误, 终止渲染
     if (n2.patchFlag === PatchFlags.BAIL) {
       optimized = false
       n2.dynamicChildren = null
@@ -429,7 +430,7 @@ function baseCreateRenderer(
             slotScopeIds,
             optimized
           )
-        } 
+        }
         // 组件
         else if (shapeFlag & ShapeFlags.COMPONENT) {
           processComponent(
@@ -1258,6 +1259,7 @@ function baseCreateRenderer(
       }
       return
     }
+
     // 类似 vue 渲染 watcher, 这里是一个 渲染副作用函数, 是视图和数据连接的桥梁,负责视图dom 新增/更新
     setupRenderEffect(
       instance,
@@ -1783,7 +1785,7 @@ function baseCreateRenderer(
     // (a b) c
     // (a b) d e
 
-    // 找出前置节点
+    // 找出前置相同节点
     while (i <= e1 && i <= e2) {
       const n1 = c1[i]
       const n2 = (c2[i] = optimized
@@ -1812,7 +1814,7 @@ function baseCreateRenderer(
     // a (b c)
     // d e (b c)
 
-    // 找出后置节点
+    // 找出后置相同节点
     while (i <= e1 && i <= e2) {
       const n1 = c1[e1]
       const n2 = (c2[e2] = optimized
@@ -1846,10 +1848,11 @@ function baseCreateRenderer(
     // c (a b)
     // i = 0, e1 = -1, e2 = 0
 
-    // vnode 比 oldVnode 多
+    // 与处理完, oldvnode children 没有剩余, 但是 vnode 存在, patch 新建
     if (i > e1) {
       if (i <= e2) {
         const nextPos = e2 + 1
+        // 插入 dom 标识元素
         const anchor = nextPos < l2 ? (c2[nextPos] as VNode).el : parentAnchor
         while (i <= e2) {
           patch(
@@ -1878,9 +1881,10 @@ function baseCreateRenderer(
     // (b c)
       // i = 0, e1 = 0, e2 = -1
 
-    // oldVnode 比 vnode 多, 进行 dom 卸载
+    // oldVnode children 比 vnode children 多, 进行 dom 卸载
     else if (i > e2) {
       while (i <= e1) {
+        // 卸载剩余 children
         unmount(c1[i], parentComponent, parentSuspense, true)
         i++
       }
@@ -1890,6 +1894,8 @@ function baseCreateRenderer(
     // [i ... e1 + 1]: a b [c d e] f g
     // [i ... e2 + 1]: a b [e d c h] f g
     // i = 2, e1 = 4, e2 = 5
+
+    // 获取最长递增子序列长度
     else {
       const s1 = i // prev starting index
       const s2 = i // next starting index
@@ -2101,7 +2107,7 @@ function baseCreateRenderer(
     if (ref != null) {
       setRef(ref, null, parentSuspense, vnode, true)
     }
-
+    // keep-alive 销毁
     if (shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE) {
       ;(parentComponent!.ctx as KeepAliveContext).deactivate(vnode)
       return
@@ -2111,13 +2117,11 @@ function baseCreateRenderer(
     const shouldInvokeVnodeHook = !isAsyncWrapper(vnode)
 
     let vnodeHook: VNodeHook | undefined | null
-    if (
-      shouldInvokeVnodeHook &&
-      (vnodeHook = props && props.onVnodeBeforeUnmount)
-    ) {
+    if (shouldInvokeVnodeHook && (vnodeHook = props && props.onVnodeBeforeUnmount)) {
       invokeVNodeHook(vnodeHook, parentComponent, vnode)
     }
 
+    // 是一个组件
     if (shapeFlag & ShapeFlags.COMPONENT) {
       unmountComponent(vnode.component!, parentSuspense, doRemove)
     } else {
@@ -2168,10 +2172,7 @@ function baseCreateRenderer(
     }
 
     if (
-      (shouldInvokeVnodeHook &&
-        (vnodeHook = props && props.onVnodeUnmounted)) ||
-      shouldInvokeDirs
-    ) {
+      (shouldInvokeVnodeHook && (vnodeHook = props && props.onVnodeUnmounted)) || shouldInvokeDirs) {
       queuePostRenderEffect(() => {
         vnodeHook && invokeVNodeHook(vnodeHook, parentComponent, vnode)
         shouldInvokeDirs &&
@@ -2255,15 +2256,12 @@ function baseCreateRenderer(
 
     const { bum, scope, update, subTree, um } = instance
 
-    // beforeUnmount hook
+    // beforeUnmount 钩子
     if (bum) {
       invokeArrayFns(bum)
     }
 
-    if (
-      __COMPAT__ &&
-      isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)
-    ) {
+    if (__COMPAT__ && isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)) {
       instance.emit('hook:beforeDestroy')
     }
 
@@ -2277,19 +2275,19 @@ function baseCreateRenderer(
       update.active = false
       unmount(subTree, instance, parentSuspense, doRemove)
     }
-    // unmounted hook
+
+    // unmounted 钩子
     if (um) {
       queuePostRenderEffect(um, parentSuspense)
     }
-    if (
-      __COMPAT__ &&
-      isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)
-    ) {
+
+    if (__COMPAT__ && isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)) {
       queuePostRenderEffect(
         () => instance.emit('hook:destroyed'),
         parentSuspense
       )
     }
+    // 异步执行 渲染副作用 函数
     queuePostRenderEffect(() => {
       instance.isUnmounted = true
     }, parentSuspense)
@@ -2297,6 +2295,7 @@ function baseCreateRenderer(
     // A component with async dep inside a pending suspense is unmounted before
     // its async dep resolves. This should remove the dep from the suspense, and
     // cause the suspense to resolve immediately if that was the last dep.
+
     if (
       __FEATURE_SUSPENSE__ &&
       parentSuspense &&
@@ -2351,9 +2350,11 @@ function baseCreateRenderer(
       // 开启 dom 更新, _vnode 为 null, 说明是创建, 都存在值, 则更新
       patch(container._vnode || null, vnode, container, null, null, null, isSVG)
     }
-    // 执行各种异步回调, 貌似和渲染关系不大,先不关注
+    // 用于处理预先刷新的回调函数, 计算属性, watch
     flushPreFlushCbs()
+    // 用于处理后置刷新的回调函数 dom更新
     flushPostFlushCbs()
+    // 将生成的 vnode 当做下次 dom 更新 diff 时的 oldVnode
     container._vnode = vnode
   }
 

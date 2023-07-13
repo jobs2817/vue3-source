@@ -201,6 +201,7 @@ export function createAppAPI<HostElement extends RendererElement>(
   hydrate?: RootHydrateFunction
 ): CreateAppFunction<HostElement> {
   return function createApp(rootComponent, rootProps = null) {
+    // 对 defineComponent 兼容处理
     if (!isFunction(rootComponent)) {
       rootComponent = extend({}, rootComponent)
     }
@@ -210,6 +211,7 @@ export function createAppAPI<HostElement extends RendererElement>(
       rootProps = null
     }
 
+    // app 应用全局配置初始化
     const context = createAppContext()
 
     // TODO remove in 3.4
@@ -231,6 +233,7 @@ export function createAppAPI<HostElement extends RendererElement>(
 
     let isMounted = false
 
+    // app 属性初始化, 及方法注册
     const app: App = (context.app = {
       _uid: uid++,
       _component: rootComponent as ConcreteComponent,
@@ -252,7 +255,7 @@ export function createAppAPI<HostElement extends RendererElement>(
           )
         }
       },
-
+      // 插件注册
       use(plugin: Plugin, ...options: any[]) {
         if (installedPlugins.has(plugin)) {
           __DEV__ && warn(`Plugin has already been applied to target app.`)
@@ -270,7 +273,7 @@ export function createAppAPI<HostElement extends RendererElement>(
         }
         return app
       },
-
+      // 混入
       mixin(mixin: ComponentOptions) {
         if (__FEATURE_OPTIONS_API__) {
           if (!context.mixins.includes(mixin)) {
@@ -286,7 +289,7 @@ export function createAppAPI<HostElement extends RendererElement>(
         }
         return app
       },
-
+      // 全局组件
       component(name: string, component?: Component): any {
         if (__DEV__) {
           validateComponentName(name, context.config)
@@ -300,7 +303,7 @@ export function createAppAPI<HostElement extends RendererElement>(
         context.components[name] = component
         return app
       },
-
+      // 全局组件
       directive(name: string, directive?: Directive) {
         if (__DEV__) {
           validateDirectiveName(name)
@@ -315,7 +318,7 @@ export function createAppAPI<HostElement extends RendererElement>(
         context.directives[name] = directive
         return app
       },
-
+      // 组件挂载,  核心就是  render
       mount(
         rootContainer: HostElement,
         isHydrate?: boolean,
@@ -372,7 +375,7 @@ export function createAppAPI<HostElement extends RendererElement>(
           )
         }
       },
-
+      // app 销毁
       unmount() {
         if (isMounted) {
           render(null, app._container)
@@ -386,6 +389,7 @@ export function createAppAPI<HostElement extends RendererElement>(
         }
       },
 
+      // 属性注入
       provide(key, value) {
         if (__DEV__ && (key as string | symbol) in context.provides) {
           warn(
