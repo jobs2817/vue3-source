@@ -61,6 +61,7 @@ export function compile(
     })
   )
 }
+// eslint-disable-next-line no-debugger
 debugger
 export function parse(template: string, options: ParserOptions = {}): RootNode {
   return baseParse(template, extend({}, parserOptions, options))

@@ -372,12 +372,13 @@ function baseCreateRenderer(
     }
 
     // patching & not same type, unmount old tree
-    // oldvnode 存在, 但是新旧 vnode 类型不一致,直接卸载旧的 dom
+    // oldvnode 存在, 但是新旧 vnode 类型不一致,直接卸载旧的 dom, 创建新的
     if (n1 && !isSameVNodeType(n1, n2)) {
       anchor = getNextHostNode(n1)
       unmount(n1, parentComponent, parentSuspense, true)
       n1 = null
     }
+
     // 当前节点及其子节点正在进行渲染时遇到了错误, 终止渲染
     if (n2.patchFlag === PatchFlags.BAIL) {
       optimized = false
@@ -444,7 +445,7 @@ function baseCreateRenderer(
             slotScopeIds,
             optimized
           )
-        } 
+        }
         // 内置组件teleport
         else if (shapeFlag & ShapeFlags.TELEPORT) {
           ;(type as typeof TeleportImpl).process(
@@ -459,7 +460,7 @@ function baseCreateRenderer(
             optimized,
             internals
           )
-        } 
+        }
         // 内置组件suspense
         else if (__FEATURE_SUSPENSE__ && shapeFlag & ShapeFlags.SUSPENSE) {
           ;(type as typeof SuspenseImpl).process(
@@ -587,6 +588,7 @@ function baseCreateRenderer(
     hostRemove(anchor!)
   }
 
+  // 创建原生标签
   const processElement = (
     n1: VNode | null,
     n2: VNode,
@@ -599,6 +601,7 @@ function baseCreateRenderer(
     optimized: boolean
   ) => {
     isSVG = isSVG || n2.type === 'svg'
+    // oldvnode不存在, 直接创建 dom
     if (n1 == null) {
       mountElement(
         n2,
@@ -611,6 +614,7 @@ function baseCreateRenderer(
         optimized
       )
     } else {
+      // 更新 dom
       patchElement(
         n1,
         n2,
@@ -635,6 +639,9 @@ function baseCreateRenderer(
   ) => {
     let el: RendererElement
     let vnodeHook: VNodeHook | undefined | null
+    // eslint-disable-next-line no-debugger
+    debugger
+
     const { type, props, shapeFlag, transition, dirs } = vnode
 
     el = vnode.el = hostCreateElement(
@@ -661,6 +668,7 @@ function baseCreateRenderer(
       )
     }
 
+    // 调用指令的 hook
     if (dirs) {
       invokeDirectiveHook(vnode, null, parentComponent, 'created')
     }
@@ -1210,7 +1218,8 @@ function baseCreateRenderer(
   ) => {
     // 2.x compat may pre-create the component instance before actually
     // mounting
-    const compatMountInstance =  __COMPAT__ && initialVNode.isCompatRoot && initialVNode.component
+    const compatMountInstance =
+      __COMPAT__ && initialVNode.isCompatRoot && initialVNode.component
     // createComponentInstance 创建组件 instance
     const instance: ComponentInternalInstance =
       compatMountInstance ||
@@ -1280,7 +1289,11 @@ function baseCreateRenderer(
   const updateComponent = (n1: VNode, n2: VNode, optimized: boolean) => {
     const instance = (n2.component = n1.component)!
     if (shouldUpdateComponent(n1, n2, optimized)) {
-      if (__FEATURE_SUSPENSE__ &&instance.asyncDep && !instance.asyncResolved) {
+      if (
+        __FEATURE_SUSPENSE__ &&
+        instance.asyncDep &&
+        !instance.asyncResolved
+      ) {
         // async & still pending - just update props and slots
         // since the component's reactive effect for render isn't set-up yet
         if (__DEV__) {
@@ -1317,14 +1330,18 @@ function baseCreateRenderer(
     optimized
   ) => {
     // 同 vue2 mountComponent, 不管创建视图还是更新视图,都会调用这个方法
+    // 首先执行  render 函数, 做依赖收集, 生成 vnode, 而后根据 vnode 递归 生成 dom
     const componentUpdateFn = () => {
       // 没有挂载
       if (!instance.isMounted) {
         let vnodeHook: VNodeHook | null | undefined
         const { el, props } = initialVNode
         const { bm, m, parent } = instance
+
+        // 是否异步组件标识
         const isAsyncWrapperVNode = isAsyncWrapper(initialVNode)
 
+        // 没怎么看懂
         toggleRecurse(instance, false)
         // beforeMount hook
         if (bm) {
@@ -1343,6 +1360,7 @@ function baseCreateRenderer(
         ) {
           instance.emit('hook:beforeMount')
         }
+
         toggleRecurse(instance, true)
 
         // 先不管, 自定义渲染函数生成的 vnode, 直接看 else 既可
@@ -1386,6 +1404,7 @@ function baseCreateRenderer(
           if (__DEV__) {
             startMeasure(instance, `render`)
           }
+          // eslint-disable-next-line no-debugger
           debugger
           // 执行 render 生成 vnode, 其他逻辑暂时没看,不影响流程理解
           const subTree = (instance.subTree = renderComponentRoot(instance))
@@ -1415,7 +1434,10 @@ function baseCreateRenderer(
           queuePostRenderEffect(m, parentSuspense)
         }
         // onVnodeMounted
-        if (!isAsyncWrapperVNode && (vnodeHook = props && props.onVnodeMounted)) {
+        if (
+          !isAsyncWrapperVNode &&
+          (vnodeHook = props && props.onVnodeMounted)
+        ) {
           const scopedInitialVNode = initialVNode
           queuePostRenderEffect(
             () => invokeVNodeHook(vnodeHook!, parent, scopedInitialVNode),
@@ -1423,7 +1445,10 @@ function baseCreateRenderer(
           )
         }
 
-        if ( __COMPAT__ && isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)) {
+        if (
+          __COMPAT__ &&
+          isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)
+        ) {
           queuePostRenderEffect(
             () => instance.emit('hook:mounted'),
             parentSuspense
@@ -1433,7 +1458,12 @@ function baseCreateRenderer(
         // activated hook for keep-alive roots.
         // #1742 activated hook must be accessed after first render
         // since the hook may be injected by a child keep-alive
-        if (initialVNode.shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE ||(parent && isAsyncWrapper(parent.vnode) && parent.vnode.shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE)) {
+        if (
+          initialVNode.shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE ||
+          (parent &&
+            isAsyncWrapper(parent.vnode) &&
+            parent.vnode.shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE)
+        ) {
           instance.a && queuePostRenderEffect(instance.a, parentSuspense)
           if (
             __COMPAT__ &&
@@ -1482,7 +1512,10 @@ function baseCreateRenderer(
         if ((vnodeHook = next.props && next.props.onVnodeBeforeUpdate)) {
           invokeVNodeHook(vnodeHook, parent, next, vnode)
         }
-        if (__COMPAT__ && isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)) {
+        if (
+          __COMPAT__ &&
+          isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)
+        ) {
           instance.emit('hook:beforeUpdate')
         }
         toggleRecurse(instance, true)
@@ -1536,7 +1569,10 @@ function baseCreateRenderer(
             parentSuspense
           )
         }
-        if (__COMPAT__ && isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)) {
+        if (
+          __COMPAT__ &&
+          isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)
+        ) {
           queuePostRenderEffect(
             () => instance.emit('hook:updated'),
             parentSuspense
@@ -1721,7 +1757,7 @@ function baseCreateRenderer(
       const nextChild = (c2[i] = optimized
         ? cloneIfMounted(c2[i] as VNode)
         : normalizeVNode(c2[i]))
-      
+
       patch(
         c1[i],
         nextChild,
@@ -1879,7 +1915,7 @@ function baseCreateRenderer(
     // i = 2, e1 = 2, e2 = 1
     // a (b c)
     // (b c)
-      // i = 0, e1 = 0, e2 = -1
+    // i = 0, e1 = 0, e2 = -1
 
     // oldVnode children 比 vnode children 多, 进行 dom 卸载
     else if (i > e2) {
@@ -2117,7 +2153,10 @@ function baseCreateRenderer(
     const shouldInvokeVnodeHook = !isAsyncWrapper(vnode)
 
     let vnodeHook: VNodeHook | undefined | null
-    if (shouldInvokeVnodeHook && (vnodeHook = props && props.onVnodeBeforeUnmount)) {
+    if (
+      shouldInvokeVnodeHook &&
+      (vnodeHook = props && props.onVnodeBeforeUnmount)
+    ) {
       invokeVNodeHook(vnodeHook, parentComponent, vnode)
     }
 
@@ -2172,7 +2211,10 @@ function baseCreateRenderer(
     }
 
     if (
-      (shouldInvokeVnodeHook && (vnodeHook = props && props.onVnodeUnmounted)) || shouldInvokeDirs) {
+      (shouldInvokeVnodeHook &&
+        (vnodeHook = props && props.onVnodeUnmounted)) ||
+      shouldInvokeDirs
+    ) {
       queuePostRenderEffect(() => {
         vnodeHook && invokeVNodeHook(vnodeHook, parentComponent, vnode)
         shouldInvokeDirs &&
@@ -2261,7 +2303,10 @@ function baseCreateRenderer(
       invokeArrayFns(bum)
     }
 
-    if (__COMPAT__ && isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)) {
+    if (
+      __COMPAT__ &&
+      isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)
+    ) {
       instance.emit('hook:beforeDestroy')
     }
 
@@ -2281,7 +2326,10 @@ function baseCreateRenderer(
       queuePostRenderEffect(um, parentSuspense)
     }
 
-    if (__COMPAT__ && isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)) {
+    if (
+      __COMPAT__ &&
+      isCompatEnabled(DeprecationTypes.INSTANCE_EVENT_HOOKS, instance)
+    ) {
       queuePostRenderEffect(
         () => instance.emit('hook:destroyed'),
         parentSuspense

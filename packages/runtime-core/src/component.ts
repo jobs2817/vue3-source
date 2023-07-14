@@ -770,6 +770,7 @@ function setupStatefulComponent(
         )
       }
     } else {
+      // eslint-disable-next-line no-debugger
       debugger
       // 判断 setup 执行的结果是否是一个函数, 如果是函数说明是一个渲染函数, 如果是 object, 对他进行响应式, render执行时触发依赖收集
       handleSetupResult(instance, setupResult, isSSR)
@@ -806,7 +807,7 @@ export function handleSetupResult(
     if (__DEV__ || __FEATURE_PROD_DEVTOOLS__) {
       instance.devtoolsRawSetupState = setupResult
     }
-    // 做proxy 代理, render 执行时会触发 setup 暴露出去属性的 get 
+    // 做proxy 代理, render 执行时会触发 setup 暴露出去属性的 get
     instance.setupState = proxyRefs(setupResult)
     if (__DEV__) {
       exposeSetupStateOnRenderContext(instance)
@@ -844,7 +845,8 @@ export function registerRuntimeCompiler(_compile: any) {
 
 // dev only
 export const isRuntimeOnly = () => !compile
-// 
+
+// 模版编译
 export function finishComponentSetup(
   instance: ComponentInternalInstance,
   isSSR: boolean,

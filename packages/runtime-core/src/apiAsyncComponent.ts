@@ -43,15 +43,16 @@ export const isAsyncWrapper = (i: ComponentInternalInstance | VNode): boolean =>
 export function defineAsyncComponent<
   T extends Component = { new (): ComponentPublicInstance }
 >(source: AsyncComponentLoader<T> | AsyncComponentOptions<T>): T {
+  // 入参兼容
   if (isFunction(source)) {
     source = { loader: source }
   }
 
   const {
-    loader,
-    loadingComponent,
-    errorComponent,
-    delay = 200,
+    loader, // 加载器
+    loadingComponent, // loading 组件
+    errorComponent, // 错误时渲染的组件
+    delay = 200, // 延迟 时间渲染 loading 组件
     timeout, // undefined = never times out
     suspensible = true,
     onError: userOnError
@@ -67,6 +68,7 @@ export function defineAsyncComponent<
     return load()
   }
 
+  // 异步组件 加载
   const load = (): Promise<ConcreteComponent> => {
     let thisRequest: Promise<ConcreteComponent>
     return (
@@ -111,6 +113,7 @@ export function defineAsyncComponent<
     )
   }
 
+  // 组件初始化
   return defineComponent({
     name: 'AsyncComponentWrapper',
 
