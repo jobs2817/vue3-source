@@ -140,6 +140,7 @@ const KeepAliveImpl: ComponentOptions = {
         vnode.slotScopeIds,
         optimized
       )
+
       queuePostRenderEffect(() => {
         instance.isDeactivated = false
         if (instance.a) {
