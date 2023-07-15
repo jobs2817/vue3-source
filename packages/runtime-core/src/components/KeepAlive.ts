@@ -219,6 +219,7 @@ const KeepAliveImpl: ComponentOptions = {
 
     // cache sub tree after render
     let pendingCacheKey: CacheKey | null = null
+    debugger
     const cacheSubtree = () => {
       // fix #1621, the pendingCacheKey could be 0
       if (pendingCacheKey != null) {

@@ -1181,6 +1181,8 @@ function baseCreateRenderer(
   ) => {
     n2.slotScopeIds = slotScopeIds
     // 旧节点不存在,首先判断是否是 keep-alive, 不是 keep-alive 挂载 component, 存在 oldVnode, 进行更新操作
+    // eslint-disable-next-line no-debugger
+    debugger
     if (n1 == null) {
       // 是一个 keep-alive
       if (n2.shapeFlag & ShapeFlags.COMPONENT_KEPT_ALIVE) {
