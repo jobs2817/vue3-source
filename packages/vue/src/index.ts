@@ -60,6 +60,8 @@ function compileToFunction(
     opts.isCustomElement = tag => !!customElements.get(tag)
   }
   // 解析模版, 这块涉及 词法分析 & 语法分析 ...
+  // eslint-disable-next-line no-debugger
+  debugger
   const { code } = compile(template, opts)
 
   function onError(err: CompilerError, asWarning = false) {
@@ -85,8 +87,8 @@ function compileToFunction(
     __GLOBAL__ ? new Function(code)() : new Function('Vue', code)(runtimeDom)
   ) as RenderFunction
 
-    // mark the function as runtime compiled
-    // 标记这是 complite 编辑的 render
+  // mark the function as runtime compiled
+  // 标记这是 complite 编辑的 render
   ;(render as InternalRenderFunction)._rc = true
   // 返回 模板 解析编译后的  render 函数
   return (compileCache[key] = render)
