@@ -380,6 +380,8 @@ function baseCreateRenderer(
       n1 = null
     }
 
+    // ---------  以上逻辑再更新时才可能执行   ---------
+
     // 当前节点及其子节点正在进行渲染时遇到了错误, 终止渲染
     if (n2.patchFlag === PatchFlags.BAIL) {
       optimized = false
@@ -1180,6 +1182,8 @@ function baseCreateRenderer(
   ) => {
     n2.slotScopeIds = slotScopeIds
     // 旧节点不存在,首先判断是否是 keep-alive, 不是 keep-alive 挂载 component, 存在 oldVnode, 进行更新操作
+    // eslint-disable-next-line no-debugger
+    debugger
     if (n1 == null) {
       // 是一个 keep-alive
       if (n2.shapeFlag & ShapeFlags.COMPONENT_KEPT_ALIVE) {
@@ -1221,7 +1225,7 @@ function baseCreateRenderer(
     // mounting
     const compatMountInstance =
       __COMPAT__ && initialVNode.isCompatRoot && initialVNode.component
-    // createComponentInstance 创建组件 instance
+    // 创建组件实例
     const instance: ComponentInternalInstance =
       compatMountInstance ||
       (initialVNode.component = createComponentInstance(
@@ -2096,6 +2100,7 @@ function baseCreateRenderer(
     }
 
     // single nodes
+    // 有动画
     const needTransition =
       moveType !== MoveType.REORDER &&
       shapeFlag & ShapeFlags.ELEMENT &&
@@ -2146,7 +2151,7 @@ function baseCreateRenderer(
     if (ref != null) {
       setRef(ref, null, parentSuspense, vnode, true)
     }
-    // keep-alive 销毁
+    // keep-alive 销毁, 不会删除之前创建的 dom
     if (shapeFlag & ShapeFlags.COMPONENT_SHOULD_KEEP_ALIVE) {
       ;(parentComponent!.ctx as KeepAliveContext).deactivate(vnode)
       return

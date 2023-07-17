@@ -211,7 +211,7 @@ export function createAppAPI<HostElement extends RendererElement>(
       rootProps = null
     }
 
-    // app 应用全局配置初始化
+    // app 应用全局配置属性初始化
     const context = createAppContext()
 
     // TODO remove in 3.4
@@ -273,7 +273,7 @@ export function createAppAPI<HostElement extends RendererElement>(
         }
         return app
       },
-      // 混入
+      // 全局混入
       mixin(mixin: ComponentOptions) {
         if (__FEATURE_OPTIONS_API__) {
           if (!context.mixins.includes(mixin)) {
@@ -289,21 +289,23 @@ export function createAppAPI<HostElement extends RendererElement>(
         }
         return app
       },
-      // 全局组件
+      // 全局组件注册
       component(name: string, component?: Component): any {
         if (__DEV__) {
           validateComponentName(name, context.config)
         }
+        // 不传第二个参数,直接返回注册的组件配置
         if (!component) {
           return context.components[name]
         }
         if (__DEV__ && context.components[name]) {
           warn(`Component "${name}" has already been registered in target app.`)
         }
+        // 放置在上下文
         context.components[name] = component
         return app
       },
-      // 全局组件
+      // 全局指令
       directive(name: string, directive?: Directive) {
         if (__DEV__) {
           validateDirectiveName(name)
@@ -338,6 +340,7 @@ export function createAppAPI<HostElement extends RendererElement>(
           const vnode = createVNode(rootComponent, rootProps)
           // store app context on the root VNode.
           // this will be set on the root instance on initial mount.
+          // 将 全局 配置放在 appContext 上
           vnode.appContext = context
 
           // HMR root reload
@@ -351,10 +354,10 @@ export function createAppAPI<HostElement extends RendererElement>(
             hydrate(vnode as VNode<Node, Element>, rootContainer as any)
           } else {
             // 调用 render
-            // 定义在 packages/runtime-core/src/renderer.ts 里面, 
+            // 定义在 packages/runtime-core/src/renderer.ts 里面,
             render(vnode, rootContainer, isSVG)
           }
-          // 挂载完成
+          // 挂载完成标识
           isMounted = true
           app._container = rootContainer
           // for devtools and telemetry

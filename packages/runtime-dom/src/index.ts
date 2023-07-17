@@ -63,18 +63,20 @@ export const hydrate = ((...args) => {
 }) as RootHydrateFunction
 
 export const createApp = ((...args) => {
-  // 这里代码貌似是 一些 dom 操作的方法,先不管,先看懂流程
+  // eslint-disable-next-line no-debugger
+  debugger
+  // 创建渲染器
   const app = ensureRenderer().createApp(...args)
 
   if (__DEV__) {
     // 校验是否是一个原原生标签
     injectNativeTagCheck(app)
+    // 校验编译器的合法性
     injectCompilerOptionsCheck(app)
   }
 
   const { mount } = app
-  // 一下对 mount 进行重写, web端区分是  vue-loader 解析 template 还是直接浏览器解析 template, 如果是 浏览器解析, 就是运行下面代码, 对 template 做归一化处理
-  // 但是挂载都是共用一个 mount, 显然这里是浏览器端处理
+  // 以下代码兼容不写 template,直接在 body 下面写插值表达式
   app.mount = (containerOrSelector: Element | ShadowRoot | string): any => {
     // 获取挂载的 dom 节点
     const container = normalizeContainer(containerOrSelector)
@@ -108,7 +110,6 @@ export const createApp = ((...args) => {
     // clear content before mounting
     container.innerHTML = ''
     // 调用公共 mount 挂载方法
-    debugger
     const proxy = mount(container, false, container instanceof SVGElement)
     if (container instanceof Element) {
       container.removeAttribute('v-cloak')

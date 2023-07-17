@@ -1,0 +1,86 @@
+<script src="../../dist/vue.global.js"></script>
+
+<div id="demo">
+  <parent />
+</div>
+
+<script>
+  const { createApp, reactive, ref } = Vue
+  createApp({
+    components: {
+      parent: {
+        template: `<div>
+                    <button @click="modify">切换组件</button>
+                    <keep-alive>
+                      <component :is="name" />
+                    </keep-alive>
+                  </div>`,
+        setup() {
+          const name = ref('child')
+          const modify = () =>
+            (name.value = name.value === 'child2' ? 'child' : 'child2')
+          return { name, modify }
+        },
+        components: {
+          child: {
+            template:
+              '<div @click="add">child</div><span>{{ state.count }}</span>',
+            setup() {
+              const state = reactive({ count: 1 })
+              const add = () => {
+                state.count++
+              }
+              return {
+                state,
+                add
+              }
+            }
+          },
+
+          child2: {
+            template:
+              '<div @click="add">child2</div><span>{{ state.count }}</span>',
+            setup() {
+              const state = reactive({ count: 1 })
+              const add = () => {
+                state.count++
+              }
+              return {
+                state,
+                add
+              }
+            }
+          }
+        }
+      }
+    },
+    setup() {
+      const state = reactive({ count: 1 })
+      const add = () => {
+        state.count++
+      }
+      return {
+        state,
+        add
+      }
+    }
+  }).mount('#demo')
+</script>
+
+<style>
+  #demo {
+    font-family: 'Helvetica', Arial, sans-serif;
+  }
+  a {
+    text-decoration: none;
+    color: #f66;
+  }
+  li {
+    line-height: 1.5em;
+    margin-bottom: 20px;
+  }
+  .author,
+  .date {
+    font-weight: bold;
+  }
+</style>
