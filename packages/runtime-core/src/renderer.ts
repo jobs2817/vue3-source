@@ -322,6 +322,7 @@ function baseCreateRenderer(
 ): HydrationRenderer
 
 // implementation
+// 创建内部 renderer, 渲染器方法初始化
 function baseCreateRenderer(
   options: RendererOptions,
   createHydrationFns?: typeof createHydrationFunctions
@@ -366,13 +367,13 @@ function baseCreateRenderer(
     slotScopeIds = null,
     optimized = __DEV__ && isHmrUpdating ? false : !!n2.dynamicChildren
   ) => {
-    // oldVnode和 vnode 通用同一个内存对象,直接复用
+    // oldVnode和 vnode 公共同一个内存对象,直接复用
     if (n1 === n2) {
       return
     }
 
     // patching & not same type, unmount old tree
-    // oldvnode 存在, 但是新旧 vnode 类型不一致,直接卸载旧的 dom, 创建新的
+    // oldvnode 存在, 但是新旧 vnode 类型不一致,直接卸载旧的 dom, 重新创建
     if (n1 && !isSameVNodeType(n1, n2)) {
       anchor = getNextHostNode(n1)
       unmount(n1, parentComponent, parentSuspense, true)
@@ -1408,9 +1409,11 @@ function baseCreateRenderer(
           debugger
           // 执行 render 生成 vnode, 其他逻辑暂时没看,不影响流程理解
           const subTree = (instance.subTree = renderComponentRoot(instance))
+          // 性能买单,无需关注
           if (__DEV__) {
             endMeasure(instance, `render`)
           }
+          // 性能买单,无需关注
           if (__DEV__) {
             startMeasure(instance, `patch`)
           }
@@ -2387,15 +2390,16 @@ function baseCreateRenderer(
     return hostNextSibling((vnode.anchor || vnode.el)!)
   }
 
+  // 根据 虚拟 dom 开始渲染
   const render: RootRenderFunction = (vnode, container, isSVG) => {
     // vnode 不存在, 卸载oldVnode 对应的 dom
     if (vnode == null) {
-      // _vnode 指的是上一次运行 render 时生成的 vnode
+      // _vnode 指的是上一次运行 render 时生成的 vnode,其实就是 oldVnode, 新的 vnode 不存在, 旧 的存在,所以要进行 dom 卸载
       if (container._vnode) {
         unmount(container._vnode, null, null, true)
       }
     } else {
-      // 开启 dom 更新, _vnode 为 null, 说明是创建, 都存在值, 则更新
+      // 开启 dom 更新, _vnode(oldVnode) 为 null, 说明是创建, 都存在值, 则更新
       patch(container._vnode || null, vnode, container, null, null, null, isSVG)
     }
     // 用于处理预先刷新的回调函数, 计算属性, watch
